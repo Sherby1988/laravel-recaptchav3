@@ -36,6 +36,10 @@ class RecaptchaV3
      * @var \GuzzleHttp\Client
      */
     protected $http;
+    /**
+     * @var bool
+     */
+    protected $defer;
 
     /**
      * @var \Illuminate\Http\Request
@@ -54,6 +58,7 @@ class RecaptchaV3
         $this->sitekey = $config['recaptchav3']['sitekey'];
         $this->origin = $config['recaptchav3']['origin'] ?? 'https://www.google.com/recaptcha';
         $this->locale = $config['recaptchav3']['locale'] ?? $app->getLocale();
+        $this->defer = $config['recaptchav3']['defer'] ? 'defer' : '';
         $this->http = $client;
         $this->request = $request;
     }
@@ -107,7 +112,7 @@ class RecaptchaV3
      */
     public function initJs()
     {
-        return '<script src="' . $this->origin . '/api.js?hl=' . $this->locale . '&render=' . $this->sitekey . '"></script>';
+        return '<script ' . $this->defer . ' src="' . $this->origin . '/api.js?hl=' . $this->locale . '&render=' . $this->sitekey . '"></script>';
     }
 
 
@@ -118,14 +123,27 @@ class RecaptchaV3
     {
         $fieldId = uniqid($name . '-', false);
         $html = '<input type="hidden" name="' . $name . '" id="' . $fieldId . '">';
-        $html .= "<script>
-  grecaptcha.ready(function() {
-      grecaptcha.execute('" . $this->sitekey . "', {action: '" . $action . "'}).then(function(token) {
-         document.getElementById('" . $fieldId . "').value = token;
-      });
-  });
-  </script>";
+        if($this->defer) {
+            $html .= "<script>
+            document.addEventListener('DOMContentLoaded', function() {
+                {$this->getExecuteScript()}
+            });
+            </script>";
+        }else{
+            $html .= "<script>
+  {$this->getExecuteScript()}
+            </script>";
+        }
+        
         return $html;
+    }
+
+    private function getExecuteScript() {
+return "grecaptcha.ready(function() {
+    grecaptcha.execute('" . $this->sitekey . "', {action: '" . $action . "'}).then(function(token) {
+       document.getElementById('" . $fieldId . "').value = token;
+    });
+});";
     }
 
 
