@@ -126,19 +126,19 @@ class RecaptchaV3
         if($this->defer) {
             $html .= "<script>
             document.addEventListener('DOMContentLoaded', function() {
-                {$this->getExecuteScript()}
+                {$this->getExecuteScript($action, $fieldId)}
             });
             </script>";
         }else{
             $html .= "<script>
-  {$this->getExecuteScript()}
+  {$this->getExecuteScript($action, $fieldId)}
             </script>";
         }
-        
+
         return $html;
     }
 
-    private function getExecuteScript() {
+    private function getExecuteScript($action, $fieldId) {
 return "grecaptcha.ready(function() {
     grecaptcha.execute('" . $this->sitekey . "', {action: '" . $action . "'}).then(function(token) {
        document.getElementById('" . $fieldId . "').value = token;
